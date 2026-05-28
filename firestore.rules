@@ -1,0 +1,114 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --- Helper functions ---
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_+\\-@.]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function isValidUser(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.name is string && data.name.size() <= 100 &&
+             data.role in ["Manager", "Reporting Authority", "Conductor", "RailTel"] &&
+             data.phoneNumber is string && data.phoneNumber.size() <= 20 &&
+             data.status in ["Pending", "Approved", "Rejected"];
+    }
+
+    function isValidVC(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.subject is string && data.subject.size() <= 200 &&
+             data.locations is list &&
+             data.startTime is string && data.startTime.size() <= 64 &&
+             data.managerId is string && data.managerId.size() <= 128 &&
+             data.reportingAuthorityId is string && data.reportingAuthorityId.size() <= 128 &&
+             data.status in ["Scheduled", "In Progress", "Completed", "Cancelled", "Postponed"] &&
+             data.createdAt is string && data.createdAt.size() <= 64;
+    }
+
+    // Helper checks for Attendance
+    function isValidAttendance(data) {
+      return data.conductorId is string && data.conductorId.size() <= 128 &&
+             data.date is string && data.date.size() <= 32 &&
+             data.status in ["Present", "On Leave"];
+    }
+
+    // Helper checks for AttendanceChangeRequest
+    function isValidAttendanceChangeRequest(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.conductorId is string && data.conductorId.size() <= 128 &&
+             data.date is string && data.date.size() <= 32 &&
+             data.requestedInTime is string && data.requestedInTime.size() <= 64 &&
+             data.reason is string && data.reason.size() <= 500 &&
+             data.status in ["Pending", "Approved", "Rejected"] &&
+             data.createdAt is string && data.createdAt.size() <= 64;
+    }
+
+    // Helper checks for SalaryVoucher
+    function isValidSalaryVoucher(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.userId is string && data.userId.size() <= 128 &&
+             data.date is string && data.date.size() <= 32 &&
+             data.voucherType in ["CASH", "BANK"] &&
+             data.paidTo is string && data.paidTo.size() <= 100 &&
+             data.amount is number && data.amount >= 0 &&
+             data.status in ["Draft", "Pending RA Approval", "Pending Manager Approval", "Approved", "Rejected"] &&
+             data.createdAt is string && data.createdAt.size() <= 64;
+    }
+
+    // Helper checks for Message
+    function isValidMessage(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.senderId is string && data.senderId.size() <= 128 &&
+             data.receiverId is string && data.receiverId.size() <= 128 &&
+             data.content is string && data.content.size() <= 10000 &&
+             data.timestamp is string && data.timestamp.size() <= 64 &&
+             data.deliveredTo is list && data.readBy is list;
+    }
+
+    // --- System / Connection Probe ---
+    match /system/connection_probe {
+      allow read: if true;
+    }
+
+    // --- Users Collection Rules ---
+    match /users/{userId} {
+      allow read: if true;
+      allow write: if isValidId(userId) && isValidUser(incoming());
+    }
+
+    // --- VCs Collection Rules ---
+    match /vcs/{vcId} {
+      allow read: if true;
+      allow write: if isValidId(vcId) && isValidVC(incoming());
+    }
+
+    // --- Attendance Records ---
+    match /attendance/{attendanceId} {
+      allow read: if true;
+      allow write: if isValidId(attendanceId) && isValidAttendance(incoming());
+    }
+
+    // --- Attendance Change Requests ---
+    match /attendanceChangeRequests/{requestId} {
+      allow read: if true;
+      allow write: if isValidId(requestId) && isValidAttendanceChangeRequest(incoming());
+    }
+
+    // --- Salary Vouchers ---
+    match /salaryVouchers/{voucherId} {
+      allow read: if true;
+      allow write: if isValidId(voucherId) && isValidSalaryVoucher(incoming());
+    }
+
+    // --- Messages ---
+    match /messages/{messageId} {
+      allow read: if true;
+      allow write: if isValidId(messageId) && isValidMessage(incoming());
+    }
+  }
+}
