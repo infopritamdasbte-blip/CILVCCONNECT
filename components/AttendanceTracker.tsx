@@ -54,15 +54,22 @@ interface AutoLog {
 }
 
 const AttendanceTracker: React.FC<AttendanceTrackerProps> = ({ conductorId }) => {
-  const { attendance, markInTime, markOutTime, markOnLeave } = useAppContext();
+  const { 
+    attendance, 
+    markInTime, 
+    markOutTime, 
+    markOnLeave, 
+    attendanceMode, 
+    geofenceRange, 
+    requestAttendanceChange, 
+    attendanceChangeRequests 
+  } = useAppContext();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedRecord, setSelectedRecord] = useState<Attendance | null>(null);
   const [isChangeRequestModalOpen, setIsChangeRequestModalOpen] = useState(false);
 
-  // Auto Attendance Geofence states
-  const [isAutoAttendanceEnabled, setIsAutoAttendanceEnabled] = useState<boolean>(() => {
-    return localStorage.getItem(`cil_auto_attendance_enabled_${conductorId}`) === 'true';
-  });
+  // Auto Attendance Geofence states are governed globally by Reporting Authority setting
+  const isAutoAttendanceEnabled = attendanceMode === 'Autopilot';
 
   const [simulatedLocation, setSimulatedLocation] = useState<'hq' | 'parking' | 'outside' | 'away' | 'gps'>(() => {
     return (localStorage.getItem(`cil_auto_attendance_sim_${conductorId}`) as any) || 'hq';
@@ -78,6 +85,45 @@ const AttendanceTracker: React.FC<AttendanceTrackerProps> = ({ conductorId }) =>
   });
 
   const todayStr = new Date().toISOString().split('T')[0];
+
+  const todaysAttendance = useMemo(() => {
+    return attendance.find(a => a.conductorId === conductorId && a.date === todayStr);
+  }, [attendance, conductorId, todayStr]);
+
+  const todaysPendingRequest = useMemo(() => {
+    return attendanceChangeRequests.find(r => r.conductorId === conductorId && r.date === todayStr && r.status === 'Pending');
+  }, [attendanceChangeRequests, conductorId, todayStr]);
+
+  const handleManualInRequest = () => {
+    requestAttendanceChange({
+      conductorId,
+      date: todayStr,
+      requestedInTime: new Date().toISOString(),
+      requestedOutTime: null,
+      reason: "Manual In-Time Attendance Check-in (Awaiting RA Approval)"
+    });
+  };
+
+  const handleManualLeaveRequest = () => {
+    requestAttendanceChange({
+      conductorId,
+      date: todayStr,
+      requestedInTime: "LEAVE",
+      requestedOutTime: null,
+      reason: "Manual Leave Request (Awaiting RA Approval)"
+    });
+  };
+
+  const handleManualOutRequest = () => {
+    if (!todaysAttendance || !todaysAttendance.inTime) return;
+    requestAttendanceChange({
+      conductorId,
+      date: todayStr,
+      requestedInTime: todaysAttendance.inTime,
+      requestedOutTime: new Date().toISOString(),
+      reason: "Manual Out-Time Attendance Check-out (Awaiting RA Approval)"
+    });
+  };
 
   useEffect(() => {
     localStorage.setItem(`cil_auto_attendance_enabled_${conductorId}`, String(isAutoAttendanceEnabled));
@@ -176,10 +222,6 @@ const AttendanceTracker: React.FC<AttendanceTrackerProps> = ({ conductorId }) =>
     );
   }, [activeCoords]);
 
-  const todaysAttendance = useMemo(() => {
-    return attendance.find(a => a.conductorId === conductorId && a.date === todayStr);
-  }, [attendance, conductorId, todayStr]);
-
   const conductorAttendanceMap = useMemo(() => {
     const map = new Map<string, Attendance>();
     attendance
@@ -196,14 +238,14 @@ const AttendanceTracker: React.FC<AttendanceTrackerProps> = ({ conductorId }) =>
 
     const rec = attendance.find(a => a.conductorId === conductorId && a.date === todayStr);
 
-    if (activeDistance <= 300) {
-      // Auto Present when user enters radius of 300m
+    if (activeDistance <= geofenceRange) {
+      // Auto Present when user enters radius of geofenceRange
       if (!rec) {
         // Not marked yet today! Let's auto check in
         markInTime(conductorId);
         
         const logMsg: AutoLog = {
-          id: `log-${Date.now()}`,
+          id: `log-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
           time: new Date().toLocaleTimeString(),
           event: "Checked In",
           details: `Entered geofence. Auto check-in verified.`,
@@ -212,25 +254,25 @@ const AttendanceTracker: React.FC<AttendanceTrackerProps> = ({ conductorId }) =>
         setAutoLogs(prev => [logMsg, ...prev]);
       }
     } else {
-      // Outside 300m - auto check out if they were checked-in and not checked-out
+      // Outside geofenceRange - auto check out if they were checked-in and not checked-out
       if (rec && rec.status === AttendanceStatus.Present && rec.inTime && !rec.outTime) {
         markOutTime(conductorId);
         
         const logMsg: AutoLog = {
-          id: `log-${Date.now()}`,
+          id: `log-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
           time: new Date().toLocaleTimeString(),
           event: "Checked Out",
-          details: `Left geofence (Radius exceeded 300m). Auto out-of-office marked.`,
+          details: `Left geofence (Radius exceeded ${geofenceRange}m). Auto out-of-office marked.`,
           distance: activeDistance
         };
         setAutoLogs(prev => [logMsg, ...prev]);
       }
     }
-  }, [activeDistance, isAutoAttendanceEnabled, attendance, conductorId, todayStr, markInTime, markOutTime]);
+  }, [activeDistance, isAutoAttendanceEnabled, attendance, conductorId, todayStr, markInTime, markOutTime, geofenceRange]);
 
   const addAutopilotToggleLog = (enabled: boolean) => {
     const logMsg: AutoLog = {
-      id: `log-${Date.now()}`,
+      id: `log-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
       time: new Date().toLocaleTimeString(),
       event: "Autopilot Toggle",
       details: enabled ? `Geofencing Autopilot activated for CIL HQ.` : `Geofencing Autopilot deactivated.`,
@@ -386,26 +428,12 @@ const AttendanceTracker: React.FC<AttendanceTrackerProps> = ({ conductorId }) =>
             </div>
             
             <div className="flex items-center gap-2">
-              <label className="text-[10px] font-black text-slate-300 tracking-widest uppercase mr-1">
-                {isAutoAttendanceEnabled ? 'Autopilot Active' : 'Autopilot Inactive'}
-              </label>
-              <button
-                onClick={() => {
-                  const nextState = !isAutoAttendanceEnabled;
-                  setIsAutoAttendanceEnabled(nextState);
-                  addAutopilotToggleLog(nextState);
-                }}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-300 focus:outline-none ${
-                  isAutoAttendanceEnabled ? 'bg-cyan-500' : 'bg-slate-700'
-                }`}
-                title="Toggle Geofenced Auto-Attendance"
-              >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-300 ${
-                    isAutoAttendanceEnabled ? 'translate-x-6' : 'translate-x-1'
-                  }`}
-                />
-              </button>
+              <span className="text-[10px] bg-cyan-500/10 text-cyan-400 px-3 py-1 rounded-full border border-cyan-500/20 uppercase tracking-widest font-black">
+                {attendanceMode === 'Autopilot' ? 'Autopilot Active' : 'Manual Mode Active'}
+              </span>
+              <span className="text-[10px] bg-slate-500/10 text-slate-400 px-2 py-1 rounded-full border border-slate-500/10 uppercase tracking-widest font-bold font-mono">
+                Locked by RA
+              </span>
             </div>
           </div>
 
@@ -616,7 +644,17 @@ const AttendanceTracker: React.FC<AttendanceTrackerProps> = ({ conductorId }) =>
           </div>
 
           <div className="mt-4 pt-4 border-t border-slate-700/60">
-            {todaysAttendance ? (
+            {todaysPendingRequest ? (
+              <div className="bg-yellow-500/10 p-4 rounded-xl border border-yellow-500/20 text-yellow-300">
+                <p className="text-[10px] font-black uppercase tracking-widest mb-1 flex items-center gap-1.5 animate-pulse">
+                  <Clock className="w-4 h-4 text-yellow-400" />
+                  Authorization Pending
+                </p>
+                <p className="text-xs text-yellow-100 font-semibold leading-relaxed">
+                  Your manual {todaysPendingRequest.requestedInTime === 'LEAVE' ? 'Leave' : 'Attendance'} request has been submitted to the Reporting Authority and is awaiting approval. Keep checking back!
+                </p>
+              </div>
+            ) : todaysAttendance ? (
               <div className="space-y-3">
                 {todaysAttendance.status === AttendanceStatus.Present && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -639,14 +677,14 @@ const AttendanceTracker: React.FC<AttendanceTrackerProps> = ({ conductorId }) =>
                       </div>
                       
                       {!todaysAttendance.outTime && !isAutoAttendanceEnabled && (
-                        <Button onClick={() => markOutTime(conductorId)} className="mt-2 w-full !py-1 text-xs font-bold uppercase tracking-wider">
+                        <Button onClick={handleManualOutRequest} className="mt-2 w-full !py-1 text-xs font-bold uppercase tracking-wider">
                           Manual Out Time
                         </Button>
                       )}
 
                       {!todaysAttendance.outTime && isAutoAttendanceEnabled && (
                         <p className="text-[8px] text-yellow-400 uppercase font-bold tracking-widest mt-2 leading-tight">
-                          Autopilot will mark Out-Time if you exit CIL HQ radius (&gt;300m)
+                          Autopilot will mark Out-Time if you exit CIL HQ radius (&gt;{geofenceRange}m)
                         </p>
                       )}
                     </div>
@@ -668,13 +706,13 @@ const AttendanceTracker: React.FC<AttendanceTrackerProps> = ({ conductorId }) =>
             ) : (
               <div>
                 <p className="text-xs text-slate-400 font-semibold mb-4 leading-relaxed">
-                  No active attendance is filed for today. You can toggle Autopilot on and enter the simulated CIL HQ to register automatically, or file manual timestamps below.
+                  No active attendance is filed for today. {attendanceMode === 'Autopilot' ? `Autopilot mode is configured globally: enter the CIL HQ geofence (≤${geofenceRange}m) to register automatically.` : `Manual mode is configured globally: file request timestamps to get authorization from the Reporting Authority.`}
                 </p>
                 <div className="flex gap-3">
-                  <Button variant="success" onClick={() => markInTime(conductorId)} className="flex-1 !py-2.5 font-bold uppercase text-xs tracking-widest">
+                  <Button variant="success" onClick={handleManualInRequest} className="flex-1 !py-2.5 font-bold uppercase text-xs tracking-widest">
                     Manual In Time
                   </Button>
-                  <Button variant="secondary" onClick={() => markOnLeave(conductorId)} className="flex-1 !py-2.5 font-bold uppercase text-xs tracking-widest">
+                  <Button variant="secondary" onClick={handleManualLeaveRequest} className="flex-1 !py-2.5 font-bold uppercase text-xs tracking-widest">
                     Mark On Leave
                   </Button>
                 </div>

@@ -16,6 +16,7 @@ import EditRoomDetailsModal from './EditRoomDetailsModal';
 import { useNavigate } from 'react-router-dom';
 import RoomUsageSection from './RoomUsageSection';
 import { PREDEFINED_ROOMS } from '../constants';
+import IPMask, { getMaskedIPText } from './common/IPMask';
 
 const SettingsIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -122,7 +123,7 @@ const RoomCard: React.FC<{ vc: VC, onClick: () => void, isHighlighted?: boolean 
                     <div className="flex items-center gap-2">
                         <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">IP:</span>
                         <span className="font-mono text-sm bg-gray-200 dark:bg-slate-700 px-2 py-0.5 rounded text-gray-800 dark:text-gray-200">
-                            {vc.roomIp || 'Not Configured'}
+                            {vc.roomIp ? <IPMask ip={vc.roomIp} /> : 'Not Configured'}
                         </span>
                     </div>
                 </div>
@@ -179,7 +180,7 @@ const RailTelDashboard: React.FC = () => {
             if (meeting) {
                 // Trigger immediate notification
                 setTimeout(() => {
-                     alert(`⚠️ ALERT: Meeting Started!\n\nSubject: ${meeting.subject}\nRoom IP: ${meeting.roomIp || 'N/A'}`);
+                     alert(`⚠️ ALERT: Meeting Started!\n\nSubject: ${meeting.subject}\nRoom IP: ${getMaskedIPText(meeting.roomIp)}`);
                 }, 500);
             }
         }
@@ -318,7 +319,11 @@ const RailTelDashboard: React.FC = () => {
 
                         <div className="flex flex-wrap gap-4 mt-2 items-center">
                             <p className={`text-sm font-semibold ${getStatusColor(vc.status)}`}>{vc.status}</p>
-                            {vc.roomIp && <span className="text-xs bg-gray-700 text-gray-200 px-2 py-0.5 rounded font-mono">IP: {vc.roomIp}</span>}
+                            {vc.roomIp && (
+                                <span className="text-xs bg-gray-700 text-gray-200 px-2 py-0.5 rounded font-mono inline-flex items-center gap-1">
+                                    IP: <IPMask ip={vc.roomIp} showPrefix={false} />
+                                </span>
+                            )}
                             {vc.roomName && <span className="text-xs bg-gray-700 text-gray-200 px-2 py-0.5 rounded">Room: {vc.roomName}</span>}
                         </div>
                     </div>
@@ -358,7 +363,11 @@ const RailTelDashboard: React.FC = () => {
                                       {vc.roomName || <span className="text-gray-400 italic">N/A</span>}
                                   </td>
                                   <td className="p-3 font-mono text-gray-700 dark:text-gray-300">
-                                      {vc.roomIp || <span className="text-gray-400 italic">N/A</span>}
+                                      {vc.roomIp ? (
+                                          <IPMask ip={vc.roomIp} />
+                                      ) : (
+                                          <span className="text-gray-400 italic">N/A</span>
+                                      )}
                                   </td>
                                   <td className="p-3 text-gray-700 dark:text-gray-300">
                                       {vc.buildingType || <span className="text-gray-400 italic">N/A</span>}

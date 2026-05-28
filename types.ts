@@ -26,6 +26,8 @@ export interface User {
   technicalIssueTune?: string;
   status: UserStatus;
   deletionRequested?: boolean;
+  attendanceMode?: 'Autopilot' | 'Manual';
+  geofenceRange?: number;
 }
 
 export enum VCStatus {

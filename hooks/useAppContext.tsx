@@ -45,6 +45,9 @@ interface AppContextType {
   approveAttendanceChange: (requestId: string) => void;
   rejectAttendanceChange: (requestId: string) => void;
   updateAttendanceRecord: (conductorId: string, date: string, inTime: string | undefined, outTime: string | undefined) => void;
+  attendanceMode: 'Autopilot' | 'Manual';
+  geofenceRange: number;
+  updateAttendanceSettings: (mode: 'Autopilot' | 'Manual', range: number) => void;
   
   // Salary Methods
   submitSalaryVoucher: (voucher: Omit<SalaryVoucher, 'id' | 'status' | 'createdAt'>) => void;
@@ -522,6 +525,32 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }));
   }, []);
 
+  // Find Reporting Authority user
+  const raUser = useMemo(() => {
+    return users.find(u => u.role === UserRole.ReportingAuthority && u.status === UserStatus.Approved);
+  }, [users]);
+
+  const attendanceMode = useMemo(() => {
+    return raUser?.attendanceMode || 'Autopilot';
+  }, [raUser]);
+
+  const geofenceRange = useMemo(() => {
+    return raUser?.geofenceRange || 300;
+  }, [raUser]);
+
+  const updateAttendanceSettings = useCallback((mode: 'Autopilot' | 'Manual', range: number) => {
+    const ra = users.find(u => u.role === UserRole.ReportingAuthority && u.status === UserStatus.Approved);
+    if (ra) {
+      updateUserProfile(ra.id, { attendanceMode: mode, geofenceRange: range });
+    } else {
+      // If no approved RA found yet, update any existing RA
+      const anyRa = users.find(u => u.role === UserRole.ReportingAuthority);
+      if (anyRa) {
+        updateUserProfile(anyRa.id, { attendanceMode: mode, geofenceRange: range });
+      }
+    }
+  }, [users, updateUserProfile]);
+
   const getUsersByRole = useCallback((role: UserRole) => {
     // Only return Approved users so Pending users cannot be assigned to VCs
     return users.filter(user => user.role === role && user.status === UserStatus.Approved);
@@ -688,15 +717,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     setAttendance(prev => {
       const existingRecordIndex = prev.findIndex(a => a.conductorId === request.conductorId && a.date === request.date);
+      const isLeave = request.requestedInTime === 'LEAVE';
+      const status = isLeave ? AttendanceStatus.OnLeave : AttendanceStatus.Present;
+      const inTime = isLeave ? undefined : request.requestedInTime;
+      const outTime = isLeave ? undefined : (request.requestedOutTime || undefined);
+
       if (existingRecordIndex > -1) {
-        return prev.map((att, index) => index === existingRecordIndex ? { ...att, status: AttendanceStatus.Present, inTime: request.requestedInTime, outTime: request.requestedOutTime || undefined } : att);
+        return prev.map((att, index) => index === existingRecordIndex ? { ...att, status, inTime, outTime } : att);
       } else {
         const newRecord: Attendance = {
           conductorId: request.conductorId,
           date: request.date,
-          status: AttendanceStatus.Present,
-          inTime: request.requestedInTime,
-          outTime: request.requestedOutTime || undefined,
+          status,
+          inTime,
+          outTime,
         };
         return [...prev, newRecord];
       }
@@ -1030,8 +1064,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     rejectSalaryVoucher,
     sendMessage,
     markAsRead,
-    sendTypingSignal
-  }), [currentUser, users, vcs, attendance, theme, salaryVouchers, messages, typingUsers, onlineUsers, toggleTheme, login, logout, signUp, approveUser, rejectUser, deleteUser, requestDeletion, cancelDeletionRequest, updateUserProfile, getUsersByRole, getUserById, scheduleVC, scheduleEmergencyVC, updateVCStatus, updateVCConductor, updateVCLocations, updateVCDetails, reportTechnicalIssue, updateUserReminderSettings, cancelVC, markInTime, markOutTime, markOnLeave, attendanceChangeRequests, requestAttendanceChange, approveAttendanceChange, rejectAttendanceChange, updateAttendanceRecord, submitSalaryVoucher, approveSalaryVoucher, rejectSalaryVoucher, sendMessage, markAsRead, sendTypingSignal]);
+    sendTypingSignal,
+    attendanceMode,
+    geofenceRange,
+    updateAttendanceSettings
+  }), [currentUser, users, vcs, attendance, theme, salaryVouchers, messages, typingUsers, onlineUsers, toggleTheme, login, logout, signUp, approveUser, rejectUser, deleteUser, requestDeletion, cancelDeletionRequest, updateUserProfile, getUsersByRole, getUserById, scheduleVC, scheduleEmergencyVC, updateVCStatus, updateVCConductor, updateVCLocations, updateVCDetails, reportTechnicalIssue, updateUserReminderSettings, cancelVC, markInTime, markOutTime, markOnLeave, attendanceChangeRequests, requestAttendanceChange, approveAttendanceChange, rejectAttendanceChange, updateAttendanceRecord, submitSalaryVoucher, approveSalaryVoucher, rejectSalaryVoucher, sendMessage, markAsRead, sendTypingSignal, attendanceMode, geofenceRange, updateAttendanceSettings]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };

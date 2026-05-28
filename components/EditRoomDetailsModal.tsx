@@ -5,6 +5,7 @@ import { VC } from '../types';
 import Modal from './common/Modal';
 import Button from './common/Button';
 import { PREDEFINED_ROOMS } from '../constants';
+import { getMaskedIPText } from './common/IPMask';
 
 interface EditRoomDetailsModalProps {
   vc: VC | null;
@@ -75,7 +76,7 @@ const EditRoomDetailsModal: React.FC<EditRoomDetailsModalProps> = ({ vc, onClose
             >
                 <option value="" disabled>-- Select a Predefined Room --</option>
                 {PREDEFINED_ROOMS.map(room => (
-                    <option key={room.ip} value={room.ip}>{room.name} ({room.ip})</option>
+                    <option key={room.ip} value={room.ip}>{room.name} ({getMaskedIPText(room.ip)})</option>
                 ))}
             </select>
         </div>

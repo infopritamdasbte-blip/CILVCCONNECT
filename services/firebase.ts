@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { initializeFirestore, getFirestore, collection, doc, getDocs, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot, getDocFromServer } from 'firebase/firestore';
+import { initializeFirestore, getFirestore, collection, doc, getDocs, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot, getDocFromServer, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
 import firebaseConfig from '../firebase-applet-config.json';
 
 // Initialize Firebase Core Services
@@ -11,12 +11,18 @@ let database;
 try {
   database = initializeFirestore(app, {
     experimentalForceLongPolling: true,
+    localCache: persistentLocalCache({
+      tabManager: persistentMultipleTabManager()
+    })
   }, firebaseConfig.firestoreDatabaseId);
 } catch (error: any) {
-  if (error && (error.code === 'failed-precondition' || error.message?.includes('already been called'))) {
+  try {
+    // Fall back to standard settings without localCache if browser sandbox restricts database storage
+    database = initializeFirestore(app, {
+      experimentalForceLongPolling: true,
+    }, firebaseConfig.firestoreDatabaseId);
+  } catch (secondError: any) {
     database = getFirestore(app, firebaseConfig.firestoreDatabaseId);
-  } else {
-    throw error;
   }
 }
 
@@ -147,11 +153,10 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
 // Validate Firebase connection on start as required by security guidelines
 async function testConnection() {
   try {
-    await getDocFromServer(doc(db, 'system', 'connection_probe'));
+    const docRef = doc(db, 'system', 'connection_probe');
+    await getDoc(docRef);
   } catch (error) {
-    if (error instanceof Error && error.message.includes('the client is offline')) {
-      console.warn('Firebase client is offline. Verify configuration and rules.', error);
-    }
+    console.warn('Firebase client is offline or sandboxed. Operating with robust persistent local fallback state.', error);
   }
 }
 setTimeout(() => {

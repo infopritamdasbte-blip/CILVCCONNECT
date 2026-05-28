@@ -4,6 +4,7 @@ import Modal from './common/Modal';
 import Button from './common/Button';
 import { VC, User } from '../types';
 import { useAppContext } from '../hooks/useAppContext';
+import IPMask from './common/IPMask';
 
 interface VCDetailsModalProps {
   vc: VC | null;
@@ -16,7 +17,7 @@ const UserIcon = () => (
     </svg>
 );
 
-const DetailItem: React.FC<{ label: string; value?: string | null; user?: User | null; isUserField?: boolean }> = ({ label, value, user, isUserField }) => (
+const DetailItem: React.FC<{ label: string; value?: React.ReactNode; user?: User | null; isUserField?: boolean }> = ({ label, value, user, isUserField }) => (
   <div className="py-2">
     <p className="text-sm text-gray-400">{label}</p>
     {user ? (
@@ -33,10 +34,11 @@ const DetailItem: React.FC<{ label: string; value?: string | null; user?: User |
     ) : isUserField ? (
         <p className="font-semibold text-yellow-500 dark:text-yellow-400">Not Assigned</p>
     ) : (
-        <p className="font-semibold text-gray-900 dark:text-white">{value || 'N/A'}</p>
+        <div className="font-semibold text-gray-900 dark:text-white mt-1">{value !== undefined && value !== null ? value : 'N/A'}</div>
     )}
   </div>
 );
+
 
 const VCDetailsModal: React.FC<VCDetailsModalProps> = ({ vc, onClose }) => {
   const { getUserById } = useAppContext();
@@ -76,7 +78,7 @@ const VCDetailsModal: React.FC<VCDetailsModalProps> = ({ vc, onClose }) => {
             <DetailItem label="Room Name" value={vc.roomName} />
             <DetailItem label="Building" value={vc.buildingType} />
         </div>
-        <DetailItem label="Room IP" value={vc.roomIp} />
+        <DetailItem label="Room IP" value={<IPMask ip={vc.roomIp} />} />
         <DetailItem label="Scheduled Start Time" value={formatDate(vc.startTime)} />
         <DetailItem label="Actual Start Time" value={formatDate(vc.actualStartTime)} />
         <DetailItem label="Actual End Time" value={formatDate(vc.actualEndTime)} />

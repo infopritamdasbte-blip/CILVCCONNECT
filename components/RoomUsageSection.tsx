@@ -7,6 +7,7 @@ import ContactSticker from './common/ContactSticker';
 import VCDetailsModal from './VCDetailsModal';
 import Modal from './common/Modal';
 import Button from './common/Button';
+import IPMask from './common/IPMask';
 
 const LivePulse = () => (
     <span className="relative flex h-2 w-2 mr-2">
@@ -86,7 +87,7 @@ const RoomUsageSection: React.FC<RoomUsageSectionProps> = ({ onRoomClick }) => {
                         <div className="flex justify-between items-start mb-4">
                             <div className="flex flex-col">
                                 <h4 className="font-black text-xs text-slate-900 dark:text-white uppercase truncate pr-2 tracking-tighter">{room.name}</h4>
-                                <span className="text-[9px] font-mono text-slate-400 dark:text-slate-600">{room.ip}</span>
+                                <IPMask ip={room.ip} className="text-[9px] font-mono text-slate-400 dark:text-slate-600" />
                             </div>
                             {room.isActive ? <LivePulse /> : <div className="w-2 h-2 rounded-full bg-slate-200 dark:bg-slate-800 mr-2"></div>}
                         </div>
@@ -142,7 +143,7 @@ const RoomUsageSection: React.FC<RoomUsageSectionProps> = ({ onRoomClick }) => {
                             </div>
                             <div>
                                 <h4 className="font-extrabold text-sm text-slate-900 dark:text-white uppercase tracking-tight">{selectedStandbyRoom.name}</h4>
-                                <p className="text-xs font-mono text-slate-400 dark:text-slate-500">{selectedStandbyRoom.ip}</p>
+                                <IPMask ip={selectedStandbyRoom.ip} className="text-xs font-mono text-slate-400 dark:text-slate-500" />
                             </div>
                         </div>
 

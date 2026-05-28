@@ -36,8 +36,14 @@ const AttendanceChangeRequests: React.FC = () => {
                         </p>
                         <p className="text-sm text-gray-300 mt-1">
                             Requested Times: 
-                            <span className="font-semibold text-green-400 ml-2">{formatTime(req.requestedInTime)}</span> - 
-                            <span className="font-semibold text-red-400 ml-1">{formatTime(req.requestedOutTime)}</span>
+                            {req.requestedInTime === 'LEAVE' ? (
+                                <span className="font-bold text-yellow-400 ml-2 bg-yellow-500/10 px-2 py-0.5 rounded border border-yellow-500/20">Mark On Leave</span>
+                            ) : (
+                                <>
+                                    <span className="font-semibold text-green-400 ml-2">{formatTime(req.requestedInTime)}</span> - 
+                                    <span className="font-semibold text-red-400 ml-1">{formatTime(req.requestedOutTime)}</span>
+                                </>
+                            )}
                         </p>
                     </div>
                     <div className="flex items-center gap-2 self-start md:self-center mt-2 md:mt-0">

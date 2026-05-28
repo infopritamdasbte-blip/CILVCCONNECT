@@ -20,7 +20,7 @@ const EditVCLocationsModal: React.FC<EditVCLocationsModalProps> = ({ vc, onClose
       const initialLocations = vc.locations.map((locName, index) => {
         const isPredefined = PREDEFINED_ROOMS.some(r => r.name === locName);
         return {
-          id: `loc-${index}-${Date.now()}`,
+          id: `loc-${index}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
           type: (isPredefined ? 'predefined' : 'other') as 'predefined' | 'other',
           name: locName
         };
@@ -43,7 +43,7 @@ const EditVCLocationsModal: React.FC<EditVCLocationsModalProps> = ({ vc, onClose
   };
 
   const addLocation = () => {
-    setLocations([...locations, { id: `loc-${Date.now()}`, type: 'predefined', name: '' }]);
+    setLocations([...locations, { id: `loc-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`, type: 'predefined', name: '' }]);
   };
 
   const removeLocation = (index: number) => {
