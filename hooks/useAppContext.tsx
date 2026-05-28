@@ -45,9 +45,9 @@ interface AppContextType {
   approveAttendanceChange: (requestId: string) => void;
   rejectAttendanceChange: (requestId: string) => void;
   updateAttendanceRecord: (conductorId: string, date: string, inTime: string | undefined, outTime: string | undefined) => void;
-  attendanceMode: 'Autopilot' | 'Manual';
+  attendanceMode: 'Manual';
   geofenceRange: number;
-  updateAttendanceSettings: (mode: 'Autopilot' | 'Manual', range: number) => void;
+  updateAttendanceSettings: (mode: 'Manual', range: number) => void;
   
   // Salary Methods
   submitSalaryVoucher: (voucher: Omit<SalaryVoucher, 'id' | 'status' | 'createdAt'>) => void;
@@ -531,14 +531,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, [users]);
 
   const attendanceMode = useMemo(() => {
-    return raUser?.attendanceMode || 'Autopilot';
+    return raUser?.attendanceMode || 'Manual';
   }, [raUser]);
 
   const geofenceRange = useMemo(() => {
     return raUser?.geofenceRange || 300;
   }, [raUser]);
 
-  const updateAttendanceSettings = useCallback((mode: 'Autopilot' | 'Manual', range: number) => {
+  const updateAttendanceSettings = useCallback((mode: 'Manual', range: number) => {
     const ra = users.find(u => u.role === UserRole.ReportingAuthority && u.status === UserStatus.Approved);
     if (ra) {
       updateUserProfile(ra.id, { attendanceMode: mode, geofenceRange: range });

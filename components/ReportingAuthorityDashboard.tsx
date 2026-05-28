@@ -434,84 +434,15 @@ const ReportingAuthorityDashboard: React.FC = () => {
 
                 <div className="bg-slate-50 dark:bg-slate-900/60 p-5 rounded-2xl border border-gray-200 dark:border-white/5 space-y-4">
                   <div className="flex items-start gap-3">
-                    <div className="p-2.5 bg-cyan-500/10 rounded-xl text-cyan-400 shrink-0">
+                    <div className="p-2.5 bg-yellow-500/10 rounded-xl text-yellow-500 shrink-0 border border-yellow-500/15">
                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M10.34 15.84c-.68-.34-1.3-.8-1.84-1.34s-1-1.16-1.34-1.84M2.05 12c.07-2.61.94-5.06 2.45-7.07L4.5 4.5m1.5 5.51c.32-1.34 1-2.54 1.94-3.48S10.66 5 12 5M21.95 12c-.07 2.61-.94 5.06-2.45 7.07l-.05.05M12 19c-1.34 0-2.54-.68-3.48-1.94s-1.42-.62-2.52-1.06m8.05-.16a18.3 18.3 0 0 0 2.45-7.07l1.5 1.5.05-.05" />
-                        <circle cx="12" cy="12" r="3" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                       </svg>
                     </div>
                     <div>
-                      <h4 className="text-sm font-black uppercase text-gray-900 dark:text-white tracking-wider">Global Configuration Parameters</h4>
+                      <h4 className="text-sm font-black uppercase text-gray-900 dark:text-white tracking-wider">Manual Attendance Mode Engaged</h4>
                       <p className="text-xs text-gray-500 dark:text-gray-400 leading-normal mt-0.5">
-                        Define automated geofencing behaviors and verification parameters across Coal India Limited (CIL) HQ.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-2">
-                    {/* Mode Toggle */}
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Attendance Logging System Mode</label>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => updateAttendanceSettings('Autopilot', geofenceRange)}
-                          className={`flex-1 py-3 px-4 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${
-                            attendanceMode === 'Autopilot'
-                              ? 'bg-cyan-500 text-white shadow-lg shadow-cyan-500/20 ring-2 ring-cyan-400'
-                              : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-gray-200 dark:border-white/5 hover:bg-slate-100 dark:hover:bg-slate-700'
-                          }`}
-                        >
-                          📡 Autopilot (Geofenced)
-                        </button>
-                        <button
-                          onClick={() => updateAttendanceSettings('Manual', geofenceRange)}
-                          className={`flex-1 py-3 px-4 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${
-                            attendanceMode === 'Manual'
-                              ? 'bg-yellow-500 text-slate-950 shadow-lg shadow-yellow-500/20 ring-2 ring-yellow-400'
-                              : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-gray-200 dark:border-white/5 hover:bg-slate-100 dark:hover:bg-slate-700'
-                          }`}
-                        >
-                          ✍ Manual (Needs Approval)
-                        </button>
-                      </div>
-                      <p className="text-[10px] text-gray-500 dark:text-slate-400 leading-relaxed italic">
-                        {attendanceMode === 'Autopilot' 
-                          ? '📡 AUTOMATED: Conductor attendance is automatically registered inside the geofence using GPS scanning.' 
-                          : '✍ REQUEST-BASED: Conductor manual clocks trigger dynamic requests. Attendance is not logged without your approval.'}
-                      </p>
-                    </div>
-
-                    {/* Geofence Range */}
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Geofencing Validation Radius Range</label>
-                      <div className="flex gap-2">
-                        <button
-                          disabled={attendanceMode !== 'Autopilot'}
-                          onClick={() => updateAttendanceSettings('Autopilot', 300)}
-                          className={`flex-1 py-3 px-4 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${
-                            attendanceMode === 'Autopilot' && geofenceRange === 300
-                              ? 'bg-green-500 text-white shadow-lg shadow-green-500/20 ring-2 ring-green-400'
-                              : 'bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-gray-200 dark:border-white/5 hover:bg-slate-100 dark:hover:bg-slate-700'
-                          } ${attendanceMode !== 'Autopilot' ? 'opacity-40 cursor-not-allowed' : ''}`}
-                        >
-                          📍 300 Meters
-                        </button>
-                        <button
-                          disabled={attendanceMode !== 'Autopilot'}
-                          onClick={() => updateAttendanceSettings('Autopilot', 500)}
-                          className={`flex-1 py-3 px-4 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${
-                            attendanceMode === 'Autopilot' && geofenceRange === 500
-                              ? 'bg-green-500 text-white shadow-lg shadow-green-500/20 ring-2 ring-green-400'
-                              : 'bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-gray-200 dark:border-white/5 hover:bg-slate-100 dark:hover:bg-slate-700'
-                          } ${attendanceMode !== 'Autopilot' ? 'opacity-40 cursor-not-allowed' : ''}`}
-                        >
-                          📍 500 Meters
-                        </button>
-                      </div>
-                      <p className="text-[10px] text-gray-500 dark:text-slate-400 leading-relaxed italic">
-                        {attendanceMode === 'Autopilot' 
-                          ? `📍 ACTIVE: GPS check-in triggers automatically within ≤ ${geofenceRange} meters of the CIL HQ primary station coordinates.` 
-                          : '📍 INACTIVE: Proximity validation is inactive since manual attendance override mode is currently active.'}
+                        Autopilot global geofencing modes have been retired as requested. All duty arrivals, departures, or leave registrations are submitted as manual clock-ins by conductors and require review and direct authorization in the reports tab.
                       </p>
                     </div>
                   </div>

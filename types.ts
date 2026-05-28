@@ -26,7 +26,7 @@ export interface User {
   technicalIssueTune?: string;
   status: UserStatus;
   deletionRequested?: boolean;
-  attendanceMode?: 'Autopilot' | 'Manual';
+  attendanceMode?: 'Manual';
   geofenceRange?: number;
 }
 
